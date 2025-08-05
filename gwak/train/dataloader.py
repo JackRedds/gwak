@@ -338,6 +338,8 @@ class GwakBaseDataloader(pl.LightningDataModule):
         self.glitch_root = glitch_root
         self.data_saving_file = data_saving_file
         self.remake_cache = remake_cache
+        self.duration = kernel_length + psd_length + fduration
+        self.kernel_size = int(sample_rate * self.duration)
         if type(ifos) == list:
             self.ifos = ifos
         else:
@@ -373,7 +375,7 @@ class GwakBaseDataloader(pl.LightningDataModule):
             subdirs = list(Path(data_dir).glob('*'))
             train, test, val = None, None, None
             for subdir in subdirs:
-                subdir_files = list(subdir.glob('*.h5')) + list(subdir.glob('*.hdf5'))
+                subdir_files = list(subdir.glob('*/*.h5')) + list(subdir.glob('*/*.hdf5'))
                 if subdir.stem == 'train':
                     train = subdir_files
                 elif subdir.stem == 'test':
@@ -404,17 +406,10 @@ class GwakBaseDataloader(pl.LightningDataModule):
         dataset = Hdf5TimeSeriesDataset(
                 self.train_fnames,
                 channels=self.ifos,
-                kernel_length=self.kernel_length,
-                fduration=self.fduration,
-                psd_length=self.psd_length,
-                sample_rate=self.sample_rate,
+                kernel_size=self.kernel_size,
                 batch_size=self.batch_size,
                 batches_per_epoch=self.batches_per_epoch,
                 coincident=False,
-                mode='clean',
-                glitch_root=self.glitch_root,
-                ifos=self.ifos,
-                remake_cache=self.remake_cache
             )
         dataloader = torch.utils.data.DataLoader(
             dataset, num_workers=self.num_workers, pin_memory=False
@@ -424,19 +419,12 @@ class GwakBaseDataloader(pl.LightningDataModule):
     def val_dataloader(self):
 
         dataset = Hdf5TimeSeriesDataset(
-            self.val_fnames,
-            channels=self.ifos,
-            kernel_length=self.kernel_length,
-            fduration=self.fduration,
-            psd_length=self.psd_length,
-            sample_rate=self.sample_rate,
-            batch_size=self.batch_size,
-            batches_per_epoch=self.batches_per_epoch,
-            coincident=False,
-            mode='clean',
-            glitch_root=self.glitch_root,
-            ifos=self.ifos,
-            remake_cache=self.remake_cache
+                self.val_fnames,
+                channels=self.ifos,
+                kernel_size=self.kernel_size,
+                batch_size=self.batch_size,
+                batches_per_epoch=self.batches_per_epoch,
+                coincident=False,
         )
         dataloader = torch.utils.data.DataLoader(
             dataset, num_workers=self.num_workers, pin_memory=False
@@ -446,19 +434,12 @@ class GwakBaseDataloader(pl.LightningDataModule):
 
     def test_dataloader(self):
         dataset = Hdf5TimeSeriesDataset(
-            self.test_fnames,
-            channels=self.ifos,
-            kernel_length=self.kernel_length,
-            fduration=self.fduration,
-            psd_length=self.psd_length,
-            sample_rate=self.sample_rate,
-            batch_size=self.batch_size,
-            batches_per_epoch=self.batches_per_epoch,
-            coincident=False,
-            mode='clean',
-            glitch_root=self.glitch_root,
-            ifos=self.ifos,
-            remake_cache=self.remake_cache
+                self.test_fnames,
+                channels=self.ifos,
+                kernel_size=self.kernel_size,
+                batch_size=self.batch_size,
+                batches_per_epoch=self.batches_per_epoch,
+                coincident=False,
         )
         dataloader = torch.utils.data.DataLoader(
             dataset, num_workers=self.num_workers, pin_memory=False
@@ -681,20 +662,12 @@ class SignalDataloader(GwakBaseDataloader):
         else:
             batch_size = self.batch_size
         return Hdf5TimeSeriesDataset(
-            fnames,
-            channels=self.ifos,
-            kernel_length=self.kernel_length,
-            fduration=self.fduration,
-            psd_length=self.psd_length,
-            sample_rate=self.sample_rate,
-            batch_size=batch_size,
-            batches_per_epoch=self.batches_per_epoch,
-            coincident=coincident,
-            mode=mode,
-            glitch_root=self.glitch_root,
-            ifos=self.ifos,
-            remake_cache=self.remake_cache,
-            cache_dir=self.cache_dir,
+                fnames,
+                channels=self.ifos,
+                kernel_size=self.kernel_size,
+                batch_size=self.batch_size,
+                batches_per_epoch=self.batches_per_epoch,
+                coincident=coincident,
         )
 
     def train_dataloader(self):
